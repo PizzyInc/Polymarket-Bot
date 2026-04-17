@@ -42,6 +42,18 @@ def _run_scan(check_spreads: bool) -> dict:
     if check_spreads:
         signals.extend(detect_wide_spreads(markets))
 
+    top_markets = sorted(markets, key=lambda m: m.volume, reverse=True)[:10]
+    top_payload = [
+        {
+            "id": m.id,
+            "question": m.question,
+            "volume": round(m.volume, 2),
+            "yes_price": m.yes_prices[0] if m.yes_prices else None,
+            "outcomes": list(zip(m.outcomes, m.yes_prices)) if m.yes_prices else [],
+        }
+        for m in top_markets
+    ]
+
     return {
         "scanned_at": datetime.now(timezone.utc).isoformat(),
         "market_count": len(markets),
@@ -56,6 +68,7 @@ def _run_scan(check_spreads: bool) -> dict:
             }
             for s in signals
         ],
+        "top_markets": top_payload,
     }
 
 

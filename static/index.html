@@ -192,10 +192,52 @@
       color: var(--border);
     }
 
+    .section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 28px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .market-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+    .market-q { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .market-price {
+      font-family: 'Consolas', monospace;
+      color: var(--green);
+      font-weight: 600;
+      min-width: 60px;
+      text-align: right;
+    }
+    .market-vol {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      min-width: 80px;
+      text-align: right;
+    }
+
     .empty {
       text-align: center;
-      padding: 60px 20px;
+      padding: 40px 20px;
       color: var(--muted);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
     }
     .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
     .empty h2 { font-size: 1rem; font-weight: 600; color: var(--text); }
@@ -281,12 +323,18 @@
 
 <div class="error-banner" id="errorBanner"></div>
 
+<div class="section-title">Trading Signals</div>
 <div class="signals-grid" id="signalsGrid">
   <div class="empty">
     <div class="empty-icon">&#128269;</div>
     <h2>Waiting for first scan</h2>
     <p>Click "Scan now" or wait for auto-refresh.</p>
   </div>
+</div>
+
+<div class="section-title">Top Markets Being Watched</div>
+<div id="marketsList">
+  <div class="empty" style="padding:20px">Loading...</div>
 </div>
 
 <footer>Powered by Polymarket Gamma API &amp; CLOB API &mdash; data is indicative only, not financial advice.</footer>
@@ -352,6 +400,26 @@
       </div>`).join('');
   }
 
+  function fmtVol(v) {
+    if (v >= 1e6) return '$' + (v/1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
+    return '$' + v.toFixed(0);
+  }
+
+  function renderMarkets(markets) {
+    const list = document.getElementById('marketsList');
+    if (!markets.length) { list.innerHTML = '<div class="empty" style="padding:20px">No market data.</div>'; return; }
+    list.innerHTML = markets.map(m => {
+      const price = m.yes_price != null ? (m.yes_price * 100).toFixed(1) + '\u00A2' : '--';
+      return `
+        <div class="market-row">
+          <div class="market-q" title="${escHtml(m.question)}">${escHtml(m.question)}</div>
+          <div class="market-price">${price}</div>
+          <div class="market-vol">${fmtVol(m.volume)}</div>
+        </div>`;
+    }).join('');
+  }
+
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
@@ -383,6 +451,7 @@
       document.getElementById('statDate').textContent  = d;
 
       renderSignals(data.signals);
+      renderMarkets(data.top_markets || []);
       setStatus('live', `Scan complete — ${data.signal_count} signal(s) across ${data.market_count} markets`);
       timer = INTERVAL;
     } catch (err) {

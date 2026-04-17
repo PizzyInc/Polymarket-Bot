@@ -14,8 +14,9 @@ import requests
 GAMMA_API = "https://gamma-api.polymarket.com"
 CLOB_API  = "https://clob.polymarket.com"
 
-SPREAD_THRESHOLD   = 0.08   # flag spreads wider than 8 cents
-OVERBOOK_THRESHOLD = 1.02   # sum of YES prices above this = overpriced book
+SPREAD_THRESHOLD   = 0.04   # flag spreads wider than 4 cents
+OVERBOOK_THRESHOLD = 1.005  # sum of YES prices above this = overpriced book
+MONOTONIC_TOL      = 0.01   # 1-cent tolerance on date-ordered inversions
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +168,7 @@ def detect_monotonic_violations(markets: list[Market]) -> list[Signal]:
             prev_yes = prev.yes_prices[0]
             curr_yes = curr.yes_prices[0]
             # Longer-dated should be <= shorter-dated for a "will happen by X" market
-            if curr_yes > prev_yes + 0.03:   # 3-cent tolerance
+            if curr_yes > prev_yes + MONOTONIC_TOL:
                 signals.append(Signal(
                     kind="MONOTONIC",
                     market_id=curr.id,
