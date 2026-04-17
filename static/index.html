@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polymarket Monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #161a22;
+      --border: #252b38;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --high: #ef4444;
+      --high-bg: #1f0e0e;
+      --med: #f59e0b;
+      --med-bg: #1c1508;
+      --low: #38bdf8;
+      --low-bg: #071520;
+      --green: #22c55e;
+      --accent: #6366f1;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .subtitle { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+    .stat-sub   { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.live { background: var(--green); animation: pulse 2s infinite; }
+    .dot.error { background: var(--high); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    .countdown { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+    .signals-grid { display: flex; flex-direction: column; gap: 10px; }
+
+    .signal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px 16px;
+      align-items: start;
+    }
+
+    .signal-card.HIGH   { border-left: 3px solid var(--high);  background: var(--high-bg); }
+    .signal-card.MEDIUM { border-left: 3px solid var(--med);   background: var(--med-bg);  }
+    .signal-card.LOW    { border-left: 3px solid var(--low);   background: var(--low-bg);  }
+
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .badge.HIGH   { background: var(--high);  color: #fff; }
+    .badge.MEDIUM { background: var(--med);   color: #000; }
+    .badge.LOW    { background: var(--low);   color: #000; }
+
+    .signal-kind {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .signal-meta { min-width: 0; }
+    .signal-question {
+      font-size: 0.88rem;
+      font-weight: 500;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .signal-detail {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .signal-id {
+      margin-top: 4px;
+      font-size: 0.7rem;
+      color: var(--border);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty h2 { font-size: 1rem; font-weight: 600; color: var(--text); }
+    .empty p  { font-size: 0.82rem; margin-top: 4px; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-banner {
+      background: var(--high-bg);
+      border: 1px solid var(--high);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: var(--high);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">&#9654;</div>
+    <div>
+      <h1>Polymarket Monitor</h1>
+      <div class="subtitle">Real-time price inefficiency scanner</div>
+    </div>
+  </div>
+  <div class="controls">
+    <label class="toggle-label">
+      <input type="checkbox" id="spreadsToggle" checked />
+      CLOB spreads
+    </label>
+    <label class="toggle-label">
+      <input type="checkbox" id="autoToggle" checked />
+      Auto-refresh
+    </label>
+    <button id="scanBtn" onclick="triggerScan()">Scan now</button>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-label">Markets scanned</div>
+    <div class="stat-value" id="statMarkets">--</div>
+    <div class="stat-sub">active Polymarket markets</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Signals detected</div>
+    <div class="stat-value" id="statSignals">--</div>
+    <div class="stat-sub" id="statBreakdown">&nbsp;</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Last scan</div>
+    <div class="stat-value" style="font-size:1.1rem" id="statTime">--</div>
+    <div class="stat-sub" id="statDate">&nbsp;</div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="dot" id="statusDot"></div>
+  <span id="statusText">Initialising...</span>
+  <span class="countdown" id="countdown"></span>
+</div>
+
+<div class="error-banner" id="errorBanner"></div>
+
+<div class="signals-grid" id="signalsGrid">
+  <div class="empty">
+    <div class="empty-icon">&#128269;</div>
+    <h2>Waiting for first scan</h2>
+    <p>Click "Scan now" or wait for auto-refresh.</p>
+  </div>
+</div>
+
+<footer>Powered by Polymarket Gamma API &amp; CLOB API &mdash; data is indicative only, not financial advice.</footer>
+
+<script>
+  const INTERVAL = 60;
+  let timer = INTERVAL;
+  let intervalId = null;
+  let scanning = false;
+
+  const statusDot  = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const countdown  = document.getElementById('countdown');
+  const scanBtn    = document.getElementById('scanBtn');
+  const errorBanner = document.getElementById('errorBanner');
+
+  function setStatus(state, text) {
+    statusDot.className = 'dot' + (state ? ' ' + state : '');
+    statusText.textContent = text;
+  }
+
+  function showError(msg) {
+    errorBanner.style.display = 'block';
+    errorBanner.textContent = 'Error: ' + msg;
+  }
+  function clearError() { errorBanner.style.display = 'none'; }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    return [
+      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+    ];
+  }
+
+  function kindLabel(kind) {
+    return { OVERBOOK: 'Overpriced Book', MONOTONIC: 'Monotonic Violation', SPREAD: 'Wide Spread' }[kind] || kind;
+  }
+
+  function renderSignals(signals) {
+    const grid = document.getElementById('signalsGrid');
+    if (!signals.length) {
+      grid.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">&#10003;</div>
+          <h2>No signals detected</h2>
+          <p>Markets look fairly priced right now.</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = signals.map(s => `
+      <div class="signal-card ${s.severity}">
+        <div>
+          <div class="badge ${s.severity}">${s.severity}</div>
+          <div class="signal-kind">${kindLabel(s.kind)}</div>
+        </div>
+        <div class="signal-meta">
+          <div class="signal-question">${escHtml(s.question)}</div>
+          <div class="signal-detail">${escHtml(s.detail)}</div>
+          <div class="signal-id">ID: ${escHtml(s.market_id)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function runScan() {
+    if (scanning) return;
+    scanning = true;
+    clearError();
+    scanBtn.disabled = true;
+    scanBtn.innerHTML = '<span class="spinner"></span>Scanning...';
+    setStatus('', 'Scanning...');
+
+    const spreads = document.getElementById('spreadsToggle').checked;
+    try {
+      const res  = await fetch(`/scan?spreads=${spreads}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      document.getElementById('statMarkets').textContent = data.market_count;
+      document.getElementById('statSignals').textContent = data.signal_count;
+
+      const counts = {};
+      data.signals.forEach(s => { counts[s.kind] = (counts[s.kind] || 0) + 1; });
+      document.getElementById('statBreakdown').textContent =
+        Object.entries(counts).map(([k,v]) => `${v} ${k}`).join(' · ') || 'none';
+
+      const [t, d] = formatTime(data.scanned_at);
+      document.getElementById('statTime').textContent = t;
+      document.getElementById('statDate').textContent  = d;
+
+      renderSignals(data.signals);
+      setStatus('live', `Scan complete — ${data.signal_count} signal(s) across ${data.market_count} markets`);
+      timer = INTERVAL;
+    } catch (err) {
+      showError(err.message);
+      setStatus('error', 'Scan failed');
+    } finally {
+      scanning = false;
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'Scan now';
+    }
+  }
+
+  function triggerScan() { timer = 0; runScan(); }
+
+  function tick() {
+    if (!document.getElementById('autoToggle').checked) {
+      countdown.textContent = '';
+      return;
+    }
+    timer--;
+    countdown.textContent = `Next scan in ${timer}s`;
+    if (timer <= 0) { timer = INTERVAL; runScan(); }
+  }
+
+  document.getElementById('autoToggle').addEventListener('change', e => {
+    countdown.textContent = e.target.checked ? `Next scan in ${timer}s` : '';
+  });
+
+  // kick off
+  runScan();
+  intervalId = setInterval(tick, 1000);
+</script>
+</body>
+</html>

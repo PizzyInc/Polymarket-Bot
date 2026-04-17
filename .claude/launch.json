@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Polymarket API Server",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+      "port": 8000
+    },
+    {
+      "name": "Polymarket Bot (one-shot)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["polymarket_bot.py"],
+      "port": null
+    },
+    {
+      "name": "Polymarket Bot (watch mode)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["polymarket_bot.py", "--watch"],
+      "port": null
+    }
+  ]
+}
